@@ -55,34 +55,34 @@ if ( !$data->threads or !$data->threads[0]->posts ) { die( 'Thread content is in
 foreach ( $data->threads[0]->posts as $post ) {
     $num = $post->num;
     if ( $num <= $last_posted_id ) { continue; }
-	
-	$link = "<a href=\"$site_url/soc/res/$thread_number.html#$num\">[$num]</a>\r\n";
+    
+    $link = "<a href=\"$site_url/soc/res/$thread_number.html#$num\">[$num]</a>\r\n";
 
     $files = '';
     foreach( $post->files as $file ) {
         $files .= $site_url . $file->path . "\r\n";
     }
 
-	$comment = strip_tags( str_replace( '<br>', "\r\n", $post->comment ), '<b><i><u><s><a><code><pre>' );
+    $comment = strip_tags( str_replace( '<br>', "\r\n", $post->comment ), '<b><i><u><s><a><code><pre>' );
 
     $res = $link . $files . $comment;
 
-	if ( mb_strlen( $res ) > $message_maxlength ) {
-		$res = mb_substr( $res, 0, $message_maxlength ) . "\r\n[...]";
-	}
-	
-	$send_res = call_tg_api_method(
-		'sendMessage',
-		[
-			'chat_id'                  => $channel_name,
-			'text'                     => $res,
-			'parse_mode'               => 'HTML',
-			'disable_web_page_preview' => true
-		]
-	);
+    if ( mb_strlen( $res ) > $message_maxlength ) {
+        $res = mb_substr( $res, 0, $message_maxlength ) . "\r\n[...]";
+    }
+    
+    $send_res = call_tg_api_method(
+        'sendMessage',
+        [
+            'chat_id'                  => $channel_name,
+            'text'                     => $res,
+            'parse_mode'               => 'HTML',
+            'disable_web_page_preview' => true
+        ]
+    );
 
     if ( !$send_res ) { die( 'call_tg_api_method fail' ); }
 
-	file_put_contents( $last_id_file, $num );
-	sleep( 5 );
+    file_put_contents( $last_id_file, $num );
+    sleep( 5 );
 }
