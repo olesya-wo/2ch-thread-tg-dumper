@@ -5,7 +5,8 @@ $token             = ''; // telegram-bot token
 $channel_name      = '@channel_name';
 $site_url          = 'https://2ch.hk';
 $thread_number     = '4219284';
-$thread_url        =  "$site_url/soc/res/$thread_number.json";
+$thread_json       = "$site_url/soc/res/$thread_number.json";
+$thread_url        = "$site_url/soc/res/$thread_number.html";
 $last_id_file      = 'last_post.txt';
 $message_maxlength = 4000;
 
@@ -46,7 +47,7 @@ $opts = array(
         'verify_peer_name'  => false
     )
 );
-$content = file_get_contents( $thread_url, false, stream_context_create( $opts ) );
+$content = file_get_contents( $thread_json, false, stream_context_create( $opts ) );
 if ( !$content ) { die( 'Thread content is empty' ); }
 $data = json_decode( $content );
 if ( !$data ) { die( 'Thread content parsing fail' ); }
@@ -56,7 +57,7 @@ foreach ( $data->threads[0]->posts as $post ) {
     $num = $post->num;
     if ( $num <= $last_posted_id ) { continue; }
     
-    $link = "<a href=\"$site_url/soc/res/$thread_number.html#$num\">[$num]</a>\r\n";
+    $link = "<a href=\"$thread_url#$num\">[$num]</a>\r\n";
 
     $files = '';
     foreach( $post->files as $file ) {
