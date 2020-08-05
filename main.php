@@ -98,5 +98,6 @@ foreach ( $data->threads[0]->posts as $post ) {
     if ( !$send_res ) { die( 'call_tg_api_method fail' ); }
 
     file_put_contents( $last_id_file, $num );
+    touch( $lock_file );
     sleep( 4 );
 }
