@@ -8,6 +8,7 @@ $thread_number     = '4219284';
 $thread_json       = "$site_url/soc/res/$thread_number.json";
 $thread_url        = "$site_url/soc/res/$thread_number.html";
 $last_id_file      = 'last_post.txt';
+$lock_file         = 'thread_dump.lock';
 $message_maxlength = 4000;
 
 function call_tg_api_method( $method, $params ): bool {
@@ -32,6 +33,15 @@ function call_tg_api_method( $method, $params ): bool {
     $data = json_decode( $content );
     return $data and $data->{'ok'};
 }
+
+function on_exit() {
+    unlink( $lock_file );
+}
+
+if ( file_exists( $lock_file ) ) { die('Already running'); }
+
+register_shutdown_function( 'on_exit' );
+touch( $lock_file );
 
 $last_posted_id = intval( file_get_contents( $last_id_file ) );
 if ( $last_posted_id < 1 ) { die( 'No last post id' ); }
