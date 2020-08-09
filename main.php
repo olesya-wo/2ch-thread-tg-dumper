@@ -75,7 +75,8 @@ foreach ( $data->threads[0]->posts as $post ) {
         $files .= SITE_URL . $file->path . "\r\n";
     }
 
-    $comment = strip_tags( str_replace( '<br>', "\r\n", $post->comment ), '<b><i><u><s><a><code><pre>' );
+    $comment = str_replace( '<br>', "\r\n", $post->comment );
+    $comment = strip_tags( $comment, '<b><strong><i><em><u><ins><s><strike><del><a><code><pre>' );
 
     $res = $link . $files . $comment;
 
