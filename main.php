@@ -47,7 +47,7 @@ try {
 } catch (Exception $e) {
     exit('Thread content parsing fail');
 }
-if (!$data->threads || !$data->threads[0]->posts) {
+if (!$data || !$data->threads || !$data->threads[0]->posts) {
     exit('Thread content is invalid');
 }
 
