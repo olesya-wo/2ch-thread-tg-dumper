@@ -1,2 +1,4 @@
 .idea
 settings.php
+.php-cs-fixer.cache
+last_post.txt
