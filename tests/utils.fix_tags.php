@@ -15,5 +15,11 @@ test('Расставляет тэги правильно', function () {
     $result = fix_tags($comment);
     _assert($result == "text <b><i>bold_italic</i></b>\r\n<b>bold <i>italic</i> bold</b>\r\ntext<del><b><i>bi</i></b><s>strike</s></del>");
 });
+test('Расставляет тэги правильно', function () {
+    $comment = "<strong>ГОДЫ ИДУТ МОИ, БАБОНЬКИ, ТОРОПИТЕСЬ!!!\r\nУСТАЛ Я ИСКАТЬ СВОЮ ПРИНЦЕССУ УЖЕ</strong>";
+    $result = fix_tags($comment);
+    var_dump($result);
+    _assert($result == "<strong>ГОДЫ ИДУТ МОИ, БАБОНЬКИ, ТОРОПИТЕСЬ!!!\r\nУСТАЛ Я ИСКАТЬ СВОЮ ПРИНЦЕССУ УЖЕ</strong>");
+});
 
 end_tests();
