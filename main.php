@@ -69,7 +69,7 @@ foreach ($data->threads[0]->posts as $post) {
     }
 
     // Собираем все части
-    $res = $link.$files.prepare_comment($post->comment);
+    $res = $link.$files.convert_comment($post->comment, true);
 
     // Лимит на длину сообщения в Telegram значительно меньше, чем на борде
     if (mb_strlen($res) > MESSAGE_MAXLENGTH) {

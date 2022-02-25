@@ -33,50 +33,72 @@ function call_tg_api_method($method, $params): bool {
     return $data && $data->{'ok'};
 }
 
+// Проверяет, есть ли в стеке парный открывающий тэг для указанного закрывающего тэга
+function tag_in_array(string $tag, array $stack): bool {
+    if ($tag == 'span') {
+        return in_array('u', $stack) || in_array('s', $stack) || in_array('tg-spoiler', $stack);
+    }
+    return in_array($tag, $stack);
+}
+
+// Проверяет парность открытого и закрытого тэга
+function is_pair(string $open, string $close): bool {
+    if ($close == 'span') {
+        return $open == 'u' || $open == 's' || $open == 'tg-spoiler';
+    }
+    return $open == $close;
+}
+
 // Не все вариации тэгов с борды валидны для Telegram, фиксим это
 function fix_tags(string $inp): string {
     // Тэгов нет - сразу выходим
-    if (!preg_match('/<\/?([a-zA-Z\d]+)>/', $inp)) {
+    if (!preg_match('/<\/?[a-zA-Z\d-]+[ >]/', $inp)) {
         return $inp;
     }
     $stack = [];
     $res = '';
     for ($i = 0; $i < mb_strlen($inp); $i++) {
+        $ch = mb_substr($inp, $i, 1);
         // Не тэг - просто добавляем в результат
-        if ($inp[$i] != '<') {
-            $res .= $inp[$i];
+        if ($ch != '<') {
+            $res .= $ch;
             continue;
         }
         $s = mb_substr($inp, $i);
         // Открывающие тэги просто помещаем в стек
-        if (preg_match('/^<([a-zA-Z\d]+)>/', $s, $matches)) {
+        if (preg_match('/^<([a-zA-Z\d-]+)[ >]/', $s, $matches)) {
             $stack[] = $matches[1];
-            $res .= $inp[$i];
+            $res .= $ch;
             continue;
         }
         // Закрывающие
-        if (preg_match('/^<\/([a-zA-Z\d]+)>/', $s, $matches)) {
+        if (preg_match('/^<\/([a-zA-Z\d-]+)>/', $s, $matches)) {
+            $cl = $matches[1];
             // Нет парного открывающего - пропускаем
-            if (!in_array($matches[1], $stack)) {
-                $i += mb_strlen($matches[1]) + 2;
+            if (!tag_in_array($cl, $stack)) {
+                $i += mb_strlen($cl) + 2;
                 continue;
             }
             $last = end($stack);
-            if ($last == $matches[1]) {
+            if (is_pair($last, $cl)) {
                 // Нормально закрыт последний открытый
                 array_pop($stack);
-                $res .= $inp[$i];
+                $res .= "</{$last}>";
+                // Пропускаем закрывающий
+                $i += mb_strlen($cl) + 2;
                 continue;
             }
             // Выталкиваем все тэги до нужного и закрываем их
             while (count($stack) > 0) {
                 $last = array_pop($stack);
-                if ($last == $matches[1]) {
+                if (is_pair($last, $cl)) {
                     break;
                 }
                 $res .= "</{$last}>";
             }
-            $res .= $inp[$i];
+            $res .= "</{$last}>";
+            // Пропускаем закрывающий
+            $i += mb_strlen($cl) + 2;
         }
     }
     while (count($stack) > 0) {
@@ -86,16 +108,35 @@ function fix_tags(string $inp): string {
     return $res;
 }
 
-// Подготовить тело поста к отправке в Telegram
-function prepare_comment(string $comment): string {
+// Подготовить текст перед исправлением тэгов
+function prepare_comment(string $comment, bool $full_support): string {
     // Удаляем непечатаемые символы
     $comment = preg_replace('/[\x00-\x1F\x7F\xA0\xAD\xD0]/u', '', $comment);
     // Telegram использует другой перенос строк
     $comment = str_replace('<br>', "\r\n", $comment);
-    // Оставляем только известные тэги, которые может пережевать наш fix_tags
-    $comment = strip_tags($comment, '<b><strong><i><em><u><ins><s><strike><del><code><pre>');
+    if ($full_support) {
+        // Меняем обозначение спойлера для Telegram
+        $comment = str_replace('<span class="spoiler">', '<tg-spoiler>', $comment);
+        // Классы s, u в span на борде используются для strikeout и underline
+        $comment = str_replace('<span class="u">', '<u>', $comment);
+        $comment = str_replace('<span class="s">', '<s>', $comment);
+        // Оставляем только известные тэги, которые может пережевать fix_tags
+        $comment = strip_tags($comment, '<b><strong><i><em><u><ins><s><strike><del><code><pre><tg-spoiler><span>');
+    } else {
+        // Оставляем только известные тэги, которые может пережевать Telegram
+        $comment = strip_tags($comment, '<b><strong><i><em><u><ins><s><strike><del><code><pre>');
+    }
     // Ссылки для reply хэш-тэгов
-    $comment = preg_replace('/>>(\d+) ?/', '>>#p\1 ', $comment);
+    return preg_replace('/>>(\d+) ?/', '>>#p\1 ', $comment);
+}
 
-    return fix_tags($comment);
+// Конвертировать тело поста для отправки в Telegram
+function convert_comment(string $comment, bool $full_support): string {
+    $comment = prepare_comment($comment, $full_support);
+    if ($full_support) {
+        $comment = fix_tags($comment);
+        $comment = strip_tags($comment, '<b><strong><i><em><u><ins><s><strike><del><code><pre><tg-spoiler>');
+    }
+
+    return $comment;
 }
